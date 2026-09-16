@@ -1,0 +1,11 @@
+node_modules/
+dist/
+electron-dist/
+.user-data/
+test-results/
+release/
+release-stage/
+work/
+outputs/Jovian Desk-win32-x64/
+outputs/user-data/
+*.log

@@ -1,0 +1,25 @@
+const paths: Record<string, string> = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
+  settings: '<path d="m9 3-1 3-3 1v4l3 1 1 3h4l1-3 3-1V7l-3-1-1-3z"/><circle cx="11" cy="9" r="2.5"/>',
+  sliders: '<path d="M4 6h12M4 12h12M4 18h12"/><circle cx="8" cy="6" r="2"/><circle cx="13" cy="12" r="2"/><circle cx="7" cy="18" r="2"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  play: '<path d="m8 5 11 7-11 7z"/>',
+  reset: '<path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/>',
+  move: '<path d="M12 3v18M3 12h18m-12-6 3-3 3 3m-6 12 3 3 3-3M6 9l-3 3 3 3m12-6 3 3-3 3"/>',
+  expand: '<path d="M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6"/>',
+  restore: '<path d="M3 9h6V3m6 0v6h6M9 21v-6H3m12 6v-6h6"/>',
+  close: '<path d="m6 6 12 12M6 18 18 6"/>',
+  minus: '<path d="M5 12h14"/>',
+  plus: '<path d="M5 12h14M12 5v14"/>',
+  chevron: '<path d="m8 5 7 7-7 7"/>',
+  ring: '<circle cx="12" cy="12" r="6"/><ellipse cx="12" cy="12" rx="11" ry="3" transform="rotate(-25 12 12)"/>',
+  planet: '<circle cx="12" cy="12" r="8"/><path d="M5 9c5 2 9 2 14 0M5 15c5 2 9 2 14 0"/>',
+  moons: '<circle cx="9" cy="14" r="6"/><circle cx="18" cy="5" r="2"/><path d="M19 11a11 11 0 0 1-7 11"/>',
+  window: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/>',
+  download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/>',
+  upload: '<path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/>',
+  check: '<path d="m5 12 4 4L19 6"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12"/><circle cx="12" cy="12" r="3"/>',
+};
+export const icon = (name: string, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.planet}</svg>`;
+export const escapeHTML = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));

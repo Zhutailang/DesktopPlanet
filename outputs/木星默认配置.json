@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "planet": {
+    "spinEnabled": true,
+    "spinPeriodHours": 9.925,
+    "retrograde": false,
+    "axialTiltDeg": 3.13,
+    "flattening": 0.06487,
+    "atmosphere": 0.18
+  },
+  "simulation": {
+    "timeScale": 1200,
+    "paused": false
+  },
+  "rings": {
+    "enabled": true,
+    "innerRadius": 1.72,
+    "width": 0.09,
+    "color": "#a3927a",
+    "density": 0.055
+  },
+  "satellites": {
+    "enabled": true,
+    "showOrbits": true,
+    "showLabels": false,
+    "items": [
+      {
+        "id": "io",
+        "name": "木卫一 · Io",
+        "enabled": true,
+        "radiusKm": 1821.49,
+        "color": "#ffffff",
+        "texture": "io",
+        "semiMajorAxisKm": 421800,
+        "eccentricity": 0.0041,
+        "inclinationDeg": 0.05,
+        "ascendingNodeDeg": 0,
+        "periapsisDeg": 0,
+        "phaseDeg": 25,
+        "spinPeriodHours": 42.4593,
+        "orbitPeriodHours": 42.4593,
+        "spinEnabled": true,
+        "orbitEnabled": true,
+        "retrograde": false
+      },
+      {
+        "id": "europa",
+        "name": "木卫二 · Europa",
+        "enabled": true,
+        "radiusKm": 1560.8,
+        "color": "#ffffff",
+        "texture": "europa",
+        "semiMajorAxisKm": 671100,
+        "eccentricity": 0.0094,
+        "inclinationDeg": 0.47,
+        "ascendingNodeDeg": 0,
+        "periapsisDeg": 0,
+        "phaseDeg": 155,
+        "spinPeriodHours": 85.2283,
+        "orbitPeriodHours": 85.2283,
+        "spinEnabled": true,
+        "orbitEnabled": true,
+        "retrograde": false
+      },
+      {
+        "id": "ganymede",
+        "name": "木卫三 · Ganymede",
+        "enabled": true,
+        "radiusKm": 2631.2,
+        "color": "#ffffff",
+        "texture": "ganymede",
+        "semiMajorAxisKm": 1070400,
+        "eccentricity": 0.0013,
+        "inclinationDeg": 0.2,
+        "ascendingNodeDeg": 0,
+        "periapsisDeg": 0,
+        "phaseDeg": 215,
+        "spinPeriodHours": 171.7093,
+        "orbitPeriodHours": 171.7093,
+        "spinEnabled": true,
+        "orbitEnabled": true,
+        "retrograde": false
+      },
+      {
+        "id": "callisto",
+        "name": "木卫四 · Callisto",
+        "enabled": true,
+        "radiusKm": 2410.3,
+        "color": "#ffffff",
+        "texture": "callisto",
+        "semiMajorAxisKm": 1882700,
+        "eccentricity": 0.0074,
+        "inclinationDeg": 0.19,
+        "ascendingNodeDeg": 0,
+        "periapsisDeg": 0,
+        "phaseDeg": 325,
+        "spinPeriodHours": 400.536,
+        "orbitPeriodHours": 400.536,
+        "spinEnabled": true,
+        "orbitEnabled": true,
+        "retrograde": false
+      }
+    ]
+  },
+  "view": {
+    "scaleMode": "presentation",
+    "moonScale": 2.5,
+    "zoom": 1,
+    "ambientLight": 0.09,
+    "sunlight": 2.8,
+    "alwaysOnTop": true,
+    "clickThrough": true,
+    "showHUD": true,
+    "fps": 60
+  }
+}
