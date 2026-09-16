@@ -46,6 +46,7 @@ let taskbarHidden = !config.view.showHUD;
 let desktopLayer = false;
 let loweringToDesktop = false;
 let desktopLayerError = '';
+let loginItemIntent = config.view.launchAtLogin;
 const layoutFile = path.join(dataDir, 'window-state.json');
 
 function fitBounds(bounds: Electron.Rectangle, area: Electron.Rectangle) {
@@ -132,8 +133,15 @@ function persist(next: Config) {
   writeFileSync(temporary, JSON.stringify(next, null, 2), 'utf8');
   renameSync(temporary, configFile);
 }
+function applyLaunchAtLogin() {
+  loginItemIntent = config.view.launchAtLogin;
+  if (process.platform === 'win32' && app.isPackaged && !testMode) {
+    app.setLoginItemSettings({ openAtLogin: loginItemIntent, path: process.execPath });
+  }
+}
 function broadcast() {
   for (const win of [widget, settings]) if (win && !win.isDestroyed()) win.webContents.send('config:changed', config);
+  applyLaunchAtLogin();
   applyWindowPresentation();
   updateIgnore(); updateTray();
 }
@@ -281,6 +289,7 @@ else {
   app.on('second-instance', () => { if (widget) showWidget(); });
   app.whenReady().then(async () => {
     Menu.setApplicationMenu(null);
+    applyLaunchAtLogin();
     const icon = path.join(root, 'dist', 'icon.png');
     const preload = path.join(root, 'electron-dist', 'preload.cjs');
     widget = new BrowserWindow({ title: 'Jovian Desk · 桌面星系', width: 860, height: 790,
@@ -296,6 +305,7 @@ else {
     placeWindows(); restoreLayout(); registerIPC();
     if (testMode) (globalThis as any).__jovianTest = {
       restoreControls: () => setControlsVisible(true), switchSystem,
+      loginItemIntent: () => loginItemIntent,
       traySystems: () => traySystems(), presentation: () => ({ controlsHidden: !config.view.showHUD, taskbarHidden, desktopLayer, desktopLayerError, alwaysOnTop: widget.isAlwaysOnTop(), focusable: widget.isFocusable() }),
     };
     for (const win of [widget, settings]) {

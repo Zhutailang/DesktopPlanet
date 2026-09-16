@@ -87,6 +87,18 @@ try {
     controlsHidden: false, taskbarHidden: false, desktopLayer: false, desktopLayerError: '', alwaysOnTop: true, focusable: true,
   });
   assert.ok((await app.evaluate(() => globalThis.__presentationCalls)).some(([, value]) => value === false));
+  const settings = app.windows().find(candidate => candidate.url().includes('settings'));
+  await page.evaluate(() => window.jovian.openSettings());
+  await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(window => window.getTitle().includes('观测设置')).isVisible())).toBe(true);
+  await settings.getByRole('tab', { name: '显示', exact: true }).click();
+  await settings.getByRole('heading', { name: '观测与桌面' }).waitFor();
+  const launchAtLogin = settings.getByLabel('开机自启动', { exact: true });
+  await expect(launchAtLogin).not.toBeChecked();
+  await launchAtLogin.check();
+  await expect.poll(() => app.evaluate(() => globalThis.__jovianTest.loginItemIntent())).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__jovianDebug.getSnapshot().config.view.launchAtLogin)).toBe(true);
+  await launchAtLogin.uncheck();
+  await expect.poll(() => app.evaluate(() => globalThis.__jovianTest.loginItemIntent())).toBe(false);
   await page.screenshot({ path: path.join(output, 'restored-controls.png'), omitBackground: true });
   assert.deepEqual(errors, [], 'No renderer errors');
   await writeFile(path.join(output, 'verification.json'), JSON.stringify({ hidden, systems, errors }, null, 2));

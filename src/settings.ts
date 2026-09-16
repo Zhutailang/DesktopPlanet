@@ -115,6 +115,7 @@ function render() {
       numeric('光晕强度', 'view.bloomStrength', 0, 3, 0.05, '', '提高数值，光晕更明亮。', true) +
       numeric('光晕扩散范围', 'view.bloomRadius', 0, 1, 0.05, '', '提高数值，光晕更宽、更柔和。', true) +
       `<div class="section-divider"></div>` +
+      toggle('开机自启动', 'view.launchAtLogin', '登录 Windows 后自动启动 Jovian Desk') +
       toggle('始终置顶', 'view.alwaysOnTop', '星球保持在其他窗口上方') +
       toggle('透明区域鼠标穿透', 'view.clickThrough', '星球以外的空白仍可点击桌面') +
       select('帧率上限', 'view.fps', [['60', '60 fps · 流畅'], ['30', '30 fps · 节能']]) +

@@ -771,6 +771,7 @@
     "alwaysOnTop": true,
     "clickThrough": true,
     "showHUD": true,
+    "launchAtLogin": false,
     "fps": 60,
     "transitionSeconds": 1.1,
     "bloomEnabled": true,

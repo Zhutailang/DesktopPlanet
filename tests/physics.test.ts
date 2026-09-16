@@ -9,14 +9,15 @@ const jupiter = (config = local()) => config.planets.find(p => p.id === 'jupiter
 
 test('eight major planets, 21 major moons and the v2 defaults are valid', () => {
   const config = freshConfig(); assert.equal(config.planets.length, 8); assert.equal(config.planets.reduce((n,p) => n + p.satellites.items.length, 0), 21);
-  assert.ok(configSchema.safeParse(config).success); assert.equal(config.navigation.systemId, 'solar');
+  assert.ok(configSchema.safeParse(config).success); assert.equal(config.navigation.systemId, 'solar');assert.equal(config.view.launchAtLogin,false);
 });
-test('older v2 configs gain bloom defaults while keeping their existing settings', () => {
+test('older v2 configs gain display defaults while keeping their existing settings', () => {
   const old=structuredClone(freshConfig()) as any;
-  delete old.view.bloomEnabled;delete old.view.bloomStrength;delete old.view.bloomRadius;
+  delete old.view.bloomEnabled;delete old.view.bloomStrength;delete old.view.bloomRadius;delete old.view.launchAtLogin;
   old.view.zoom=1.7;old.planets[4].planet.spinPeriodHours=17;
   const next=configSchema.parse(old);
   assert.equal(next.view.bloomEnabled,true);assert.equal(next.view.bloomStrength,1);assert.equal(next.view.bloomRadius,0.55);
+  assert.equal(next.view.launchAtLogin,false);
   assert.equal(next.view.zoom,1.7);assert.equal(next.planets[4].planet.spinPeriodHours,17);
   assert.throws(()=>patchedConfig(next,'view.bloomStrength',3.1));assert.throws(()=>patchedConfig(next,'view.bloomRadius',-0.1));
 });
