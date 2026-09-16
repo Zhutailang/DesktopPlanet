@@ -23,17 +23,23 @@ app.innerHTML = `
       <button id="reset-view" class="icon-button" title="重置视角 · R" aria-label="重置视角">${icon('reset')}</button>
       <button id="fill-screen" class="icon-button dock-fill" title="铺满当前屏幕 · F11" aria-label="铺满当前屏幕" aria-pressed="false">${icon('expand')}<span>铺满屏幕</span></button>
       <button id="toolbar-settings" class="icon-button" title="观测设置 · S" aria-label="打开观测设置">${icon('sliders')}</button>
+      <button id="hide-controls" class="icon-button" title="隐藏操作 UI" aria-label="隐藏操作 UI">${icon('eye-off')}</button>
     </nav>
     <div class="dock-status"><span id="scale-caption">距离压缩 · 星体放大</span><span id="time-caption">正在准备…</span></div>
     <div id="loading" class="dock-message"><span class="spinner"></span>正在展开太阳系…</div>
     <div id="notice" class="dock-message" role="status" hidden></div>
+    <dialog id="confirm-hide-controls" class="confirm-dialog hide-ui-dialog interactive" aria-labelledby="hide-ui-title">
+      <h2 id="hide-ui-title">隐藏操作 UI？</h2>
+      <p>确认后，操作 UI 会消失，Jovian Desk 将从 Windows 任务栏隐藏，并降低到桌面底层。你仍可右键系统托盘中的 Jovian Desk 图标，还原操作 UI 或直接切换星系。</p>
+      <div><button class="secondary-button" id="cancel-hide-controls">取消</button><button class="primary-button" id="apply-hide-controls">隐藏并置底</button></div>
+    </dialog>
   </section>`;
 let noticeTimer: ReturnType<typeof setTimeout>;
 function notice(message: string) {
   const el = document.querySelector<HTMLElement>('#notice')!; el.textContent = message; el.hidden = false;
   clearTimeout(noticeTimer); noticeTimer = setTimeout(() => { el.hidden = true; }, 4500);
 }
-let windowState: WindowState = { filled: false };
+let windowState: WindowState = { filled: false, controlsHidden: false };
 function applyWindowState(state: WindowState) {
   windowState = state;
   const button = document.querySelector<HTMLButtonElement>('#fill-screen')!;
@@ -45,6 +51,12 @@ function applyWindowState(state: WindowState) {
 api.onWindowState(applyWindowState); void api.getWindowState().then(applyWindowState);
 document.querySelector('#fill-screen')!.addEventListener('click', () => { void api.toggleFillScreen().then(applyWindowState).catch(error => notice(error.message)); });
 document.querySelector('#toolbar-settings')!.addEventListener('click', () => api.openSettings());
+const hideControlsDialog = document.querySelector<HTMLDialogElement>('#confirm-hide-controls')!;
+document.querySelector('#hide-controls')!.addEventListener('click', () => hideControlsDialog.showModal());
+document.querySelector('#cancel-hide-controls')!.addEventListener('click', () => hideControlsDialog.close());
+document.querySelector('#apply-hide-controls')!.addEventListener('click', async () => {
+  hideControlsDialog.close(); const result = await api.hideControls(); if (!result.ok) notice(result.error);
+});
 
 async function init() {
   let config = await api.getConfig();

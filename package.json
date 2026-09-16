@@ -12,6 +12,7 @@
     "start": "electron .",
     "test": "node --experimental-strip-types --test tests/physics.test.ts",
     "test:desktop": "node tests/desktop.mjs",
+    "test:desktop-mode": "node tests/desktop-mode.mjs",
     "test:layout": "node tests/window-layout.mjs",
     "package": "node scripts/package.mjs"
   },

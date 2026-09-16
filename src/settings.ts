@@ -117,7 +117,6 @@ function render() {
       `<div class="section-divider"></div>` +
       toggle('始终置顶', 'view.alwaysOnTop', '星球保持在其他窗口上方') +
       toggle('透明区域鼠标穿透', 'view.clickThrough', '星球以外的空白仍可点击桌面') +
-      toggle('显示底部控制台', 'view.showHUD', '隐藏后可通过托盘或 Ctrl + Alt + J 打开设置') +
       select('帧率上限', 'view.fps', [['60', '60 fps · 流畅'], ['30', '30 fps · 节能']]) +
       `<div class="shortcut-card"><h3>操作指南</h3><p><kbd>总览中双击行星</kbd><span>进入该行星系统</span></p><p><kbd>Backspace</kbd><span>返回太阳系</span></p><p><kbd>左键拖动</kbd><span>旋转观察姿态</span></p><p><kbd>Alt + 拖动</kbd><span>移动桌面窗口</span></p><p><kbd>F11</kbd><span>铺满当前屏幕 / 还原</span></p><p><kbd>Esc</kbd><span>退出铺满</span></p><p><kbd>空格</kbd><span>暂停 / 继续时间</span></p><p><kbd>R</kbd><span>重置视角</span></p><p><kbd>Ctrl + Alt + J</kbd><span>打开设置</span></p></div>` +
       `<button class="danger-text" id="quit-app">退出 Jovian Desk</button>`;

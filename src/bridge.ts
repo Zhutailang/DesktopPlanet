@@ -1,7 +1,7 @@
 import type { Config, Result } from './config.ts';
 import { freshConfig, patchedConfig, readableError, configSchema } from './config.ts';
 
-export interface WindowState { filled: boolean }
+export interface WindowState { filled: boolean; controlsHidden?: boolean }
 
 export interface DesktopBridge {
   getConfig(): Promise<Config>;
@@ -12,6 +12,8 @@ export interface DesktopBridge {
   onWindowState(callback: (state: WindowState) => void): () => void;
   toggleFillScreen(): Promise<WindowState>;
   exitFillScreen(): Promise<WindowState>;
+  hideControls(): Promise<Result>;
+  restoreControls(): Promise<Result>;
   openSettings(): void;
   closeSettings(): void;
   minimizeSettings(): void;
@@ -63,6 +65,8 @@ export const api: DesktopBridge = window.jovian ?? {
     if (document.fullscreenElement) await document.exitFullscreen();
     return { filled: !!document.fullscreenElement };
   },
+  hideControls: async () => setPreview(patchedConfig(previewConfig, 'view.showHUD', false)),
+  restoreControls: async () => setPreview(patchedConfig(previewConfig, 'view.showHUD', true)),
   openSettings: () => { window.open('./settings.html', 'jovian-settings', 'width=440,height=820'); },
   closeSettings: () => window.close(), minimizeSettings: () => {}, quit: () => window.close(),
   resetView: () => commands.forEach(fn => fn('reset-view')),

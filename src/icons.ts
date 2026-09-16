@@ -20,6 +20,7 @@ const paths: Record<string, string> = {
   upload: '<path d="M12 16V4m-5 5 5-5 5 5M4 16v4h16v-4"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12"/><circle cx="12" cy="12" r="3"/>',
+  'eye-off': '<path d="M3 3l18 18M10.6 5.2A11 11 0 0 1 12 5c6 0 10 7 10 7a18 18 0 0 1-2.1 3M6.2 6.2C3.5 8.1 2 12 2 12s4 7 10 7a10 10 0 0 0 3.8-.8M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
 };
 export const icon = (name: string, size = 18) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.planet}</svg>`;
 export const escapeHTML = (text: string) => text.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));

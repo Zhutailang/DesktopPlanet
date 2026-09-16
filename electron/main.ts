@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, screen, dialog, globalShortcut } from 'electron';
 import { mkdirSync, readFileSync, writeFileSync, renameSync, existsSync, statSync } from 'node:fs';
+import { execFile } from 'node:child_process';
 import path from 'node:path';
-import { configSchema, freshConfig, patchedConfig, readableError } from '../src/config.ts';
+import { configSchema, freshConfig, patchedConfig, readableError, systemLabel } from '../src/config.ts';
 import type { Config, Result } from '../src/config.ts';
 
 const testMode = process.env.JOVIAN_TEST === '1';
@@ -41,6 +42,10 @@ let filled = false;
 let filledDisplayId: number | undefined;
 let normalBounds: Electron.Rectangle;
 let layoutTimer: ReturnType<typeof setTimeout>;
+let taskbarHidden = !config.view.showHUD;
+let desktopLayer = false;
+let loweringToDesktop = false;
+let desktopLayerError = '';
 const layoutFile = path.join(dataDir, 'window-state.json');
 
 function fitBounds(bounds: Electron.Rectangle, area: Electron.Rectangle) {
@@ -64,7 +69,7 @@ function scheduleLayoutSave() {
   layoutTimer = setTimeout(saveLayout, 250);
 }
 function sendWindowState() {
-  for (const win of [widget, settings]) if (win && !win.isDestroyed()) win.webContents.send('window:state-changed', { filled });
+  for (const win of [widget, settings]) if (win && !win.isDestroyed()) win.webContents.send('window:state-changed', { filled, controlsHidden: !config.view.showHUD });
   updateTray();
 }
 function setFillScreen(next: boolean) {
@@ -129,9 +134,7 @@ function persist(next: Config) {
 }
 function broadcast() {
   for (const win of [widget, settings]) if (win && !win.isDestroyed()) win.webContents.send('config:changed', config);
-  widget?.setAlwaysOnTop(config.view.alwaysOnTop);
-  // Keep the controls reachable while the transparent widget is pinned.
-  settings?.setAlwaysOnTop(config.view.alwaysOnTop);
+  applyWindowPresentation();
   updateIgnore(); updateTray();
 }
 function commit(next: Config): Result {
@@ -156,17 +159,60 @@ function finishMove() {
   }
   updateIgnore();
 }
-function showSettings() { placeSettings(); if (settings.isMinimized()) settings.restore(); settings.show(); settings.focus(); }
-function showWidget() { widget.show(); widget.focus(); }
+function moveWidgetToDesktopLayer() {
+  if (process.platform !== 'win32' || desktopLayer || loweringToDesktop) return;
+  const bytes = widget.getNativeWindowHandle();
+  const handle = bytes.length >= 8 ? bytes.readBigUInt64LE() : BigInt(bytes.readUInt32LE());
+  const script = `Add-Type -TypeDefinition 'using System; using System.Runtime.InteropServices; public static class JovianWindow { [DllImport("user32.dll", SetLastError=true)] public static extern bool SetWindowPos(IntPtr hWnd, IntPtr after, int x, int y, int cx, int cy, uint flags); }'; $handle = [IntPtr]::new([Int64]${handle}); if(-not [JovianWindow]::SetWindowPos($handle, [IntPtr]::new(1), 0, 0, 0, 0, 0x13)){Write-Error ([Runtime.InteropServices.Marshal]::GetLastWin32Error()); exit 1}`;
+  const encoded = Buffer.from(script, 'utf16le').toString('base64');
+  loweringToDesktop = true; desktopLayerError = '';
+  execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { windowsHide: true }, (error, _stdout, stderr) => {
+    loweringToDesktop = false; desktopLayer = !error; desktopLayerError = error ? `${error.message}\n${stderr}`.trim() : '';
+    if (error) console.error('Unable to lower the desktop window:', error);
+  });
+}
+function applyWindowPresentation(activate = false) {
+  if (!widget || widget.isDestroyed()) return;
+  const controlsVisible = config.view.showHUD;
+  taskbarHidden = !controlsVisible; widget.setSkipTaskbar(taskbarHidden); widget.setFocusable(controlsVisible);
+  widget.setAlwaysOnTop(controlsVisible && config.view.alwaysOnTop);
+  settings?.setAlwaysOnTop(controlsVisible && config.view.alwaysOnTop);
+  if (controlsVisible) {
+    desktopLayer = false; desktopLayerError = '';
+    if (activate) { widget.show(); widget.focus(); }
+  } else {
+    settings?.hide();
+    if (!widget.isVisible()) widget.showInactive();
+    moveWidgetToDesktopLayer();
+  }
+  sendWindowState();
+}
+function setControlsVisible(visible: boolean) {
+  let result: Result = { ok: true, config };
+  if (config.view.showHUD !== visible) result = commit(patchedConfig(config, 'view.showHUD', visible));
+  if (result.ok) applyWindowPresentation(visible);
+  return result;
+}
+function switchSystem(id: string) {
+  try { return commit(patchedConfig(config, '$navigate', id)); }
+  catch (error) { return { ok: false, error: readableError(error) } as Result; }
+}
+function showSettings() { setControlsVisible(true); placeSettings(); if (settings.isMinimized()) settings.restore(); settings.show(); settings.focus(); }
+function showWidget() { setControlsVisible(true); }
+function traySystems() {
+  return [{ id: 'solar', label: '太阳系总览' }, ...config.planets.map(system => ({ id: system.id, label: systemLabel(system) }))];
+}
 function updateTray() {
   tray?.setContextMenu(Menu.buildFromTemplate([
-    { label: '显示星系', click: showWidget },
+    { label: '还原操作 UI', enabled: !config.view.showHUD, click: showWidget },
     { label: '观测设置', click: showSettings },
+    { label: '切换星系', submenu: traySystems().map(item => ({
+      label: item.label, type: 'radio' as const, checked: config.navigation.systemId === item.id, click: () => switchSystem(item.id),
+    })) },
     { label: '铺满当前屏幕', type: 'checkbox', checked: filled, click: () => setFillScreen(!filled) },
     { type: 'separator' },
     { label: '暂停时间', type: 'checkbox', checked: config.simulation.paused, click: () => commit(patchedConfig(config, 'simulation.paused', !config.simulation.paused)) },
-    { label: '窗口置顶', type: 'checkbox', checked: config.view.alwaysOnTop, click: () => commit(patchedConfig(config, 'view.alwaysOnTop', !config.view.alwaysOnTop)) },
-    { label: '显示工具栏', type: 'checkbox', checked: config.view.showHUD, click: () => commit(patchedConfig(config, 'view.showHUD', !config.view.showHUD)) },
+    { label: '窗口置顶', type: 'checkbox', enabled: config.view.showHUD, checked: config.view.showHUD && config.view.alwaysOnTop, click: () => commit(patchedConfig(config, 'view.alwaysOnTop', !config.view.alwaysOnTop)) },
     { label: '重置视角与位置', click: () => { placeWindows(); widget.webContents.send('view:command', 'reset-view'); commit(patchedConfig(config, 'view.zoom', 1)); } },
     { type: 'separator' },
     { label: '退出 Jovian Desk', click: () => app.quit() },
@@ -193,9 +239,11 @@ function on(channel: string, callback: (...args: any[]) => void, widgetOnly = fa
 
 function registerIPC() {
   handle('config:get', () => config);
-  handle('window:state', () => ({ filled }));
+  handle('window:state', () => ({ filled, controlsHidden: !config.view.showHUD }));
   handle('window:fill-toggle', () => setFillScreen(!filled));
   handle('window:fill-exit', () => setFillScreen(false));
+  handle('window:controls-hide', () => setControlsVisible(false));
+  handle('window:controls-restore', () => setControlsVisible(true));
   handle('config:patch', (key, value) => { try { return commit(patchedConfig(config, key, value)); } catch (e) { return { ok: false, error: readableError(e) }; } });
   handle('config:reset', () => { const result = commit(freshConfig()); widget.webContents.send('view:command', 'reset-view'); return result; });
   handle('config:export', async () => {
@@ -225,7 +273,7 @@ function registerIPC() {
   }, true);
   on('window:move-end', finishMove, true);
   on('view:reset', () => { widget.webContents.send('view:command', 'reset-view'); commit(patchedConfig(config, 'view.zoom', 1)); });
-  on('view:ready', () => { if (!testMode) widget.showInactive(); }, true);
+  on('view:ready', () => { if (!testMode) { widget.showInactive(); applyWindowPresentation(); } }, true);
 }
 
 if (!testMode && !app.requestSingleInstanceLock()) app.quit();
@@ -237,15 +285,19 @@ else {
     const preload = path.join(root, 'electron-dist', 'preload.cjs');
     widget = new BrowserWindow({ title: 'Jovian Desk · 桌面星系', width: 860, height: 790,
       frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
-      resizable: false, maximizable: false, show: false, alwaysOnTop: config.view.alwaysOnTop,
+      resizable: false, maximizable: false, show: false, skipTaskbar: !config.view.showHUD, alwaysOnTop: config.view.showHUD && config.view.alwaysOnTop,
       icon, webPreferences: { preload, contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
     });
     settings = new BrowserWindow({ title: 'Jovian Desk · 观测设置', width: 430, height: 790,
       minWidth: 320, minHeight: 240, frame: false, backgroundColor: '#111817', show: false,
-      alwaysOnTop: config.view.alwaysOnTop, icon,
+      alwaysOnTop: config.view.showHUD && config.view.alwaysOnTop, icon,
       webPreferences: { preload, contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: !testMode },
     });
     placeWindows(); restoreLayout(); registerIPC();
+    if (testMode) (globalThis as any).__jovianTest = {
+      restoreControls: () => setControlsVisible(true), switchSystem,
+      traySystems: () => traySystems(), presentation: () => ({ controlsHidden: !config.view.showHUD, taskbarHidden, desktopLayer, desktopLayerError, alwaysOnTop: widget.isAlwaysOnTop(), focusable: widget.isFocusable() }),
+    };
     for (const win of [widget, settings]) {
       win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       win.webContents.on('will-navigate', event => event.preventDefault());
@@ -271,7 +323,7 @@ else {
     }, 32);
     if (!testMode) {
       tray = new Tray(nativeImage.createFromPath(icon).resize({ width: 24, height: 24 }));
-      tray.setToolTip('Jovian Desk · 双击打开观测设置'); tray.on('double-click', showSettings); updateTray();
+      tray.setToolTip('Jovian Desk · 右键还原操作 UI 或切换星系'); tray.on('double-click', showWidget); updateTray();
       globalShortcut.register('CommandOrControl+Alt+J', showSettings);
     }
     const dev = process.env.JOVIAN_DEV_URL;

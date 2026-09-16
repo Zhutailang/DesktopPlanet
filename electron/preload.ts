@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld('jovian', {
   onWindowState: (fn: any) => subscribe('window:state-changed', fn),
   toggleFillScreen: () => ipcRenderer.invoke('window:fill-toggle'),
   exitFillScreen: () => ipcRenderer.invoke('window:fill-exit'),
+  hideControls: () => ipcRenderer.invoke('window:controls-hide'),
+  restoreControls: () => ipcRenderer.invoke('window:controls-restore'),
   openSettings: () => ipcRenderer.send('window:settings'),
   closeSettings: () => ipcRenderer.send('window:settings-close'),
   minimizeSettings: () => ipcRenderer.send('window:settings-minimize'),

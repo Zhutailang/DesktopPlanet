@@ -38,6 +38,8 @@
 .dock-divider { width: 1px; height: 24px; margin-right: 4px; background: #b2c0a626; }
 .planet-dock .icon-button { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; }
 .planet-dock .icon-button:hover, .planet-dock .icon-button[aria-pressed="true"] { background: #c1d39818; color: #d7e5ba; }
+.hide-ui-dialog { width: min(390px, calc(100vw - 28px)); text-align: left; user-select: text; }
+.hide-ui-dialog p { margin-bottom: 20px; }
 .planet-dock button:focus-visible { outline: 1px solid #c1d398; outline-offset: -2px; }
 .planet-dock .dock-fill { display: flex; width: auto; gap: 7px; padding: 0 11px; font-size: 11px; }
 .dock-status { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 16px; margin: 4px 7px 0; padding: 6px 0 2px; border-top: 1px solid #a9bb9417; font-size: 9px; line-height: 14px; color: #96a18e; font-variant-numeric: tabular-nums; }
@@ -56,6 +58,7 @@
   .planet-dock .icon-button { width: 38px; height: 40px; }
   .dock-bar { gap: 1px; }
   .dock-brand { gap: 5px; padding-right: 6px; }
+  .dock-brand small { display: none; }
   .dock-brand small { letter-spacing: 0; }
   .dock-divider { margin-right: 1px; }
   .dock-status { column-gap: 9px; font-size: 8px; }
