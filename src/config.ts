@@ -45,6 +45,7 @@ const v2Schema = z.object({
   view: z.object({ scaleMode: z.enum(['presentation', 'physical']), moonScale: num(1, 8), zoom: num(0.15, 5),
     ambientLight: num(0, 0.5), sunlight: num(0.5, 5), alwaysOnTop: z.boolean(), clickThrough: z.boolean(), showHUD: z.boolean(),
     launchAtLogin: z.boolean().default(false),
+    hiddenLayer: z.enum(['top', 'bottom']).default('top'), hiddenOpacity: num(0.2, 1).default(0.72),
     fps: z.union([z.literal(30), z.literal(60)]), transitionSeconds: num(0.35, 3).default(1.1),
     bloomEnabled: z.boolean().default(true), bloomStrength: num(0, 3).default(1), bloomRadius: num(0, 1).default(0.55) }).strict(),
 }).strict().superRefine((config, ctx) => {
@@ -62,7 +63,7 @@ export type Result = { ok: true; config: Config } | { ok: false; error: string }
 export function freshConfig(): Config {
   return { version: 2, planets: defaultPlanets(), navigation: { systemId: 'solar', selectedPlanetId: 'earth' },
     simulation: { timeScale: 1200, overviewTimeScale: 864000, paused: false }, solar: { showOrbits: true, asteroidBelt: true, asteroidCount: 2400 },
-    view: { scaleMode: 'presentation', moonScale: 2.5, zoom: 1, ambientLight: 0.09, sunlight: 2.8, alwaysOnTop: true, clickThrough: true, showHUD: true, launchAtLogin: false, fps: 60, transitionSeconds: 1.1,
+    view: { scaleMode: 'presentation', moonScale: 2.5, zoom: 1, ambientLight: 0.09, sunlight: 2.8, alwaysOnTop: true, clickThrough: true, showHUD: true, launchAtLogin: false, hiddenLayer: 'top', hiddenOpacity: 0.72, fps: 60, transitionSeconds: 1.1,
       bloomEnabled: true, bloomStrength: 1, bloomRadius: 0.55 } };
 }
 function migrate(input: unknown) {

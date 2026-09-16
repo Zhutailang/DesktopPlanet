@@ -47,15 +47,23 @@ try {
   assert.match(warning, /桌面底层/);
   assert.match(warning, /系统托盘/);
   assert.match(warning, /切换星系/);
+  await expect(dialog.getByLabel('置顶展示')).toBeChecked();
   await page.screenshot({ path: path.join(output, 'hide-confirmation.png'), omitBackground: true });
   await dialog.getByRole('button', { name: '取消', exact: true }).click();
   await expect(dialog).toBeHidden();
   assert.equal(await page.evaluate(() => window.__jovianDebug.getSnapshot().config.view.showHUD), true);
 
   await page.getByRole('button', { name: '隐藏操作 UI', exact: true }).click();
-  await dialog.getByRole('button', { name: '隐藏并置底', exact: true }).click();
+  await dialog.getByRole('button', { name: '隐藏操作 UI', exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__jovianDebug.getSnapshot().config.view.showHUD)).toBe(false);
   await expect(page.locator('.planet-dock')).toBeHidden();
+  const topHidden = await app.evaluate(() => ({ presentation: globalThis.__jovianTest.presentation(), mode: globalThis.__jovianTest.desktopMode() }));
+  assert.deepEqual(topHidden.presentation, {
+    controlsHidden: true, taskbarHidden: true, desktopLayer: false, desktopLayerError: '', alwaysOnTop: true, focusable: false,
+  });
+  assert.equal(topHidden.mode.layer, 'top');assert.equal(topHidden.mode.inputMode, 'block');assert.ok(Math.abs(topHidden.mode.opacity - 0.72) < 0.01);
+
+  await app.evaluate(() => globalThis.__jovianTest.setHiddenLayer('bottom'));
   await expect.poll(async () => {
     const state = await app.evaluate(() => globalThis.__jovianTest.presentation());
     if (state.desktopLayerError) throw new Error(state.desktopLayerError);
@@ -65,6 +73,8 @@ try {
   assert.deepEqual(hidden, {
     controlsHidden: true, taskbarHidden: true, desktopLayer: true, desktopLayerError: '', alwaysOnTop: false, focusable: false,
   });
+  const bottomMode = await app.evaluate(() => globalThis.__jovianTest.desktopMode());
+  assert.equal(bottomMode.layer, 'bottom');assert.notEqual(bottomMode.inputMode, 'block');assert.ok(Math.abs(bottomMode.opacity - 0.72) < 0.01);
   assert.ok((await app.evaluate(() => globalThis.__presentationCalls)).some(([, value]) => value === true));
 
   const systems = await app.evaluate(() => globalThis.__jovianTest.traySystems());
@@ -86,6 +96,7 @@ try {
   await expect.poll(() => app.evaluate(() => globalThis.__jovianTest.presentation())).toEqual({
     controlsHidden: false, taskbarHidden: false, desktopLayer: false, desktopLayerError: '', alwaysOnTop: true, focusable: true,
   });
+  assert.equal((await app.evaluate(() => globalThis.__jovianTest.desktopMode())).opacity, 1);
   assert.ok((await app.evaluate(() => globalThis.__presentationCalls)).some(([, value]) => value === false));
   const settings = app.windows().find(candidate => candidate.url().includes('settings'));
   await page.evaluate(() => window.jovian.openSettings());
@@ -99,9 +110,15 @@ try {
   await expect.poll(() => page.evaluate(() => window.__jovianDebug.getSnapshot().config.view.launchAtLogin)).toBe(true);
   await launchAtLogin.uncheck();
   await expect.poll(() => app.evaluate(() => globalThis.__jovianTest.loginItemIntent())).toBe(false);
+  await settings.getByLabel('隐藏后的显示层级', { exact: true }).selectOption('top');
+  await settings.getByLabel('隐藏后的透明度', { exact: true }).fill('0.6');
+  await settings.getByLabel('隐藏后的透明度', { exact: true }).press('Tab');
+  await expect.poll(() => page.evaluate(() => {
+    const view = window.__jovianDebug.getSnapshot().config.view; return [view.hiddenLayer, view.hiddenOpacity];
+  })).toEqual(['top', 0.6]);
   await page.screenshot({ path: path.join(output, 'restored-controls.png'), omitBackground: true });
   assert.deepEqual(errors, [], 'No renderer errors');
-  await writeFile(path.join(output, 'verification.json'), JSON.stringify({ hidden, systems, errors }, null, 2));
+  await writeFile(path.join(output, 'verification.json'), JSON.stringify({ topHidden, hidden, bottomMode, systems, errors }, null, 2));
   console.log('DESKTOP MODE, CONFIRMATION, NATIVE LAYERING, TRAY RESTORE AND SYSTEM SWITCH PASSED', output);
 } catch (error) {
   console.error('Desktop mode verification failed', output, errors);

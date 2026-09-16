@@ -12,7 +12,7 @@ export interface DesktopBridge {
   onWindowState(callback: (state: WindowState) => void): () => void;
   toggleFillScreen(): Promise<WindowState>;
   exitFillScreen(): Promise<WindowState>;
-  hideControls(): Promise<Result>;
+  hideControls(layer?: Config['view']['hiddenLayer']): Promise<Result>;
   restoreControls(): Promise<Result>;
   openSettings(): void;
   closeSettings(): void;
@@ -65,7 +65,11 @@ export const api: DesktopBridge = window.jovian ?? {
     if (document.fullscreenElement) await document.exitFullscreen();
     return { filled: !!document.fullscreenElement };
   },
-  hideControls: async () => setPreview(patchedConfig(previewConfig, 'view.showHUD', false)),
+  hideControls: async layer => {
+    let next = previewConfig;
+    if (layer) next = patchedConfig(next, 'view.hiddenLayer', layer);
+    return setPreview(patchedConfig(next, 'view.showHUD', false));
+  },
   restoreControls: async () => setPreview(patchedConfig(previewConfig, 'view.showHUD', true)),
   openSettings: () => { window.open('./settings.html', 'jovian-settings', 'width=440,height=820'); },
   closeSettings: () => window.close(), minimizeSettings: () => {}, quit: () => window.close(),

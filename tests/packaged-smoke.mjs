@@ -33,6 +33,15 @@ try{
   await page.keyboard.press('Escape');
   await app.close();running=null;
 
+  const olderV2=JSON.parse(await readFile(path.join(root,'outputs','太阳系默认配置.json'),'utf8'));
+  delete olderV2.view.hiddenLayer;delete olderV2.view.hiddenOpacity;
+  await writeFile(path.join(userData,'config.json'),JSON.stringify(olderV2,null,2));
+  running=await launch();({app,page}=running);scene=await page.evaluate(()=>window.__jovianDebug.getSnapshot());
+  assert.equal(scene.config.view.hiddenLayer,'top');assert.equal(scene.config.view.hiddenOpacity,0.72);
+  const normalizedV2=JSON.parse(await readFile(path.join(userData,'config.json'),'utf8'));
+  assert.equal(normalizedV2.view.hiddenLayer,'top');assert.equal(normalizedV2.view.hiddenOpacity,0.72);
+  await app.close();running=null;
+
   const legacy=JSON.parse(await readFile(path.join(root,'outputs','木星默认配置.json'),'utf8'));legacy.planet.spinPeriodHours=17;legacy.satellites.items[0].name='迁移保留';
   await writeFile(path.join(userData,'config.json'),JSON.stringify(legacy,null,2));
   running=await launch();({app,page}=running);scene=await page.evaluate(()=>window.__jovianDebug.getSnapshot());

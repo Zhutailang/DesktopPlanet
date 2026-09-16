@@ -30,8 +30,13 @@ app.innerHTML = `
     <div id="notice" class="dock-message" role="status" hidden></div>
     <dialog id="confirm-hide-controls" class="confirm-dialog hide-ui-dialog interactive" aria-labelledby="hide-ui-title">
       <h2 id="hide-ui-title">隐藏操作 UI？</h2>
-      <p>确认后，操作 UI 会消失，Jovian Desk 将从 Windows 任务栏隐藏，并降低到桌面底层。你仍可右键系统托盘中的 Jovian Desk 图标，还原操作 UI 或直接切换星系。</p>
-      <div><button class="secondary-button" id="cancel-hide-controls">取消</button><button class="primary-button" id="apply-hide-controls">隐藏并置底</button></div>
+      <p>确认后，操作 UI 和 Windows 任务栏入口会消失。置顶模式不接受鼠标输入，并按设置中的目标透明度显示；也可选择将应用放到桌面底层。</p>
+      <fieldset class="hide-layer-options" aria-label="隐藏后的显示层级">
+        <label><input type="radio" name="hide-layer" value="top"><span><b>置顶展示</b><small>保持可见，鼠标会穿透到下方窗口</small></span></label>
+        <label><input type="radio" name="hide-layer" value="bottom"><span><b>桌面底层</b><small>放在其他应用窗口之后</small></span></label>
+      </fieldset>
+      <p class="hide-ui-tip">之后可右键系统托盘图标还原操作 UI、切换层级或切换星系。</p>
+      <div><button class="secondary-button" id="cancel-hide-controls">取消</button><button class="primary-button" id="apply-hide-controls">隐藏操作 UI</button></div>
     </dialog>
   </section>`;
 let noticeTimer: ReturnType<typeof setTimeout>;
@@ -52,10 +57,15 @@ api.onWindowState(applyWindowState); void api.getWindowState().then(applyWindowS
 document.querySelector('#fill-screen')!.addEventListener('click', () => { void api.toggleFillScreen().then(applyWindowState).catch(error => notice(error.message)); });
 document.querySelector('#toolbar-settings')!.addEventListener('click', () => api.openSettings());
 const hideControlsDialog = document.querySelector<HTMLDialogElement>('#confirm-hide-controls')!;
-document.querySelector('#hide-controls')!.addEventListener('click', () => hideControlsDialog.showModal());
+document.querySelector('#hide-controls')!.addEventListener('click', async () => {
+  const config = await api.getConfig();
+  hideControlsDialog.querySelector<HTMLInputElement>(`input[value="${config.view.hiddenLayer}"]`)!.checked = true;
+  hideControlsDialog.showModal();
+});
 document.querySelector('#cancel-hide-controls')!.addEventListener('click', () => hideControlsDialog.close());
 document.querySelector('#apply-hide-controls')!.addEventListener('click', async () => {
-  hideControlsDialog.close(); const result = await api.hideControls(); if (!result.ok) notice(result.error);
+  const layer = hideControlsDialog.querySelector<HTMLInputElement>('input[name="hide-layer"]:checked')?.value as Config['view']['hiddenLayer'] | undefined;
+  hideControlsDialog.close(); const result = await api.hideControls(layer); if (!result.ok) notice(result.error);
 });
 
 async function init() {

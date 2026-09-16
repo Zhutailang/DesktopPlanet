@@ -116,6 +116,8 @@ function render() {
       numeric('光晕扩散范围', 'view.bloomRadius', 0, 1, 0.05, '', '提高数值，光晕更宽、更柔和。', true) +
       `<div class="section-divider"></div>` +
       toggle('开机自启动', 'view.launchAtLogin', '登录 Windows 后自动启动 Jovian Desk') +
+      select('隐藏后的显示层级', 'view.hiddenLayer', [['top', '置顶展示 · 鼠标穿透'], ['bottom', '置于桌面底层']]) +
+      numeric('隐藏后的透明度', 'view.hiddenOpacity', 0.2, 1, 0.05, '', '隐藏操作 UI 后应用到整个星系窗口。', true) +
       toggle('始终置顶', 'view.alwaysOnTop', '星球保持在其他窗口上方') +
       toggle('透明区域鼠标穿透', 'view.clickThrough', '星球以外的空白仍可点击桌面') +
       select('帧率上限', 'view.fps', [['60', '60 fps · 流畅'], ['30', '30 fps · 节能']]) +

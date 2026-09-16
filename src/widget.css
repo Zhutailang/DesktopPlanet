@@ -39,7 +39,15 @@
 .planet-dock .icon-button { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; }
 .planet-dock .icon-button:hover, .planet-dock .icon-button[aria-pressed="true"] { background: #c1d39818; color: #d7e5ba; }
 .hide-ui-dialog { width: min(390px, calc(100vw - 28px)); text-align: left; user-select: text; }
-.hide-ui-dialog p { margin-bottom: 20px; }
+.hide-ui-dialog p { margin-bottom: 14px; }
+.hide-layer-options { display: grid; gap: 7px; margin: 0 0 12px; padding: 0; border: 0; }
+.hide-layer-options label { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid #7381694d; border-radius: 9px; background: #111916; cursor: pointer; }
+.hide-layer-options label:has(input:checked) { border-color: #b8ca91; background: #b8ca9112; }
+.hide-layer-options input { accent-color: #b8ca91; }
+.hide-layer-options span, .hide-layer-options b, .hide-layer-options small { display: block; }
+.hide-layer-options b { color: #e0e8d9; font-size: 12px; }
+.hide-layer-options small { margin-top: 2px; color: #8e9b89; font-size: 10px; }
+.hide-ui-dialog .hide-ui-tip { margin-bottom: 18px; color: #9ca894; font-size: 10px; }
 .planet-dock button:focus-visible { outline: 1px solid #c1d398; outline-offset: -2px; }
 .planet-dock .dock-fill { display: flex; width: auto; gap: 7px; padding: 0 11px; font-size: 11px; }
 .dock-status { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 16px; margin: 4px 7px 0; padding: 6px 0 2px; border-top: 1px solid #a9bb9417; font-size: 9px; line-height: 14px; color: #96a18e; font-variant-numeric: tabular-nums; }

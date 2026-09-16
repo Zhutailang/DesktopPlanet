@@ -21,8 +21,8 @@ if (existsSync(configFile)) {
     config = configSchema.parse(raw);
     if (raw.version === 1) {
       writeFileSync(path.join(dataDir, `config-v1-backup-${Date.now()}.json`), text, 'utf8');
-      persist(config);
     }
+    if (JSON.stringify(raw) !== JSON.stringify(config)) persist(config);
   }
   catch (error) {
     loadWarning = `配置无法读取，已启用默认值。原文件已备份。\n${readableError(error)}`;
@@ -35,6 +35,7 @@ let tray: Tray | undefined;
 let quitting = false;
 let pointerDrag = false;
 let ignoring = false;
+let ignoreMode: 'none' | 'forward' | 'block' = 'none';
 let requestedIgnore = false;
 let moveOrigin: { x: number; y: number; cursorX: number; cursorY: number } | null = null;
 let poll: ReturnType<typeof setInterval>;
@@ -150,9 +151,15 @@ function commit(next: Config): Result {
   catch (error) { return { ok: false, error: `保存失败：${readableError(error)}` }; }
 }
 function updateIgnore() {
+  const hiddenTop = !config.view.showHUD && config.view.hiddenLayer === 'top';
+  if (hiddenTop) {
+    if (ignoreMode !== 'block' && widget && !widget.isDestroyed()) widget.setIgnoreMouseEvents(true);
+    ignoring = true; ignoreMode = 'block'; return;
+  }
   const shouldIgnore = config.view.clickThrough && requestedIgnore && !pointerDrag && !moveOrigin;
-  if (shouldIgnore !== ignoring && widget && !widget.isDestroyed()) {
-    widget.setIgnoreMouseEvents(shouldIgnore, { forward: true }); ignoring = shouldIgnore;
+  const nextMode = shouldIgnore ? 'forward' : 'none';
+  if (nextMode !== ignoreMode && widget && !widget.isDestroyed()) {
+    widget.setIgnoreMouseEvents(shouldIgnore, { forward: true }); ignoring = shouldIgnore; ignoreMode = nextMode;
   }
 }
 function finishMove() {
@@ -182,8 +189,10 @@ function moveWidgetToDesktopLayer() {
 function applyWindowPresentation(activate = false) {
   if (!widget || widget.isDestroyed()) return;
   const controlsVisible = config.view.showHUD;
+  const hiddenTop = !controlsVisible && config.view.hiddenLayer === 'top';
   taskbarHidden = !controlsVisible; widget.setSkipTaskbar(taskbarHidden); widget.setFocusable(controlsVisible);
-  widget.setAlwaysOnTop(controlsVisible && config.view.alwaysOnTop);
+  widget.setOpacity(controlsVisible ? 1 : config.view.hiddenOpacity);
+  widget.setAlwaysOnTop(controlsVisible ? config.view.alwaysOnTop : hiddenTop);
   settings?.setAlwaysOnTop(controlsVisible && config.view.alwaysOnTop);
   if (controlsVisible) {
     desktopLayer = false; desktopLayerError = '';
@@ -191,16 +200,22 @@ function applyWindowPresentation(activate = false) {
   } else {
     settings?.hide();
     if (!widget.isVisible()) widget.showInactive();
-    moveWidgetToDesktopLayer();
+    if (hiddenTop) { desktopLayer = false; desktopLayerError = ''; }
+    else moveWidgetToDesktopLayer();
   }
+  updateIgnore();
   sendWindowState();
 }
-function setControlsVisible(visible: boolean) {
+function setControlsVisible(visible: boolean, layer?: Config['view']['hiddenLayer']) {
   let result: Result = { ok: true, config };
-  if (config.view.showHUD !== visible) result = commit(patchedConfig(config, 'view.showHUD', visible));
+  let next = config;
+  if (layer && next.view.hiddenLayer !== layer) next = patchedConfig(next, 'view.hiddenLayer', layer);
+  if (next.view.showHUD !== visible) next = patchedConfig(next, 'view.showHUD', visible);
+  if (next !== config) result = commit(next);
   if (result.ok) applyWindowPresentation(visible);
   return result;
 }
+function setHiddenLayer(layer: Config['view']['hiddenLayer']) { return commit(patchedConfig(config, 'view.hiddenLayer', layer)); }
 function switchSystem(id: string) {
   try { return commit(patchedConfig(config, '$navigate', id)); }
   catch (error) { return { ok: false, error: readableError(error) } as Result; }
@@ -217,6 +232,10 @@ function updateTray() {
     { label: '切换星系', submenu: traySystems().map(item => ({
       label: item.label, type: 'radio' as const, checked: config.navigation.systemId === item.id, click: () => switchSystem(item.id),
     })) },
+    { label: '隐藏后的显示层级', submenu: [
+      { label: '置顶展示 · 鼠标穿透', type: 'radio' as const, checked: config.view.hiddenLayer === 'top', click: () => setHiddenLayer('top') },
+      { label: '置于桌面底层', type: 'radio' as const, checked: config.view.hiddenLayer === 'bottom', click: () => setHiddenLayer('bottom') },
+    ] },
     { label: '铺满当前屏幕', type: 'checkbox', checked: filled, click: () => setFillScreen(!filled) },
     { type: 'separator' },
     { label: '暂停时间', type: 'checkbox', checked: config.simulation.paused, click: () => commit(patchedConfig(config, 'simulation.paused', !config.simulation.paused)) },
@@ -250,7 +269,7 @@ function registerIPC() {
   handle('window:state', () => ({ filled, controlsHidden: !config.view.showHUD }));
   handle('window:fill-toggle', () => setFillScreen(!filled));
   handle('window:fill-exit', () => setFillScreen(false));
-  handle('window:controls-hide', () => setControlsVisible(false));
+  handle('window:controls-hide', layer => setControlsVisible(false, layer));
   handle('window:controls-restore', () => setControlsVisible(true));
   handle('config:patch', (key, value) => { try { return commit(patchedConfig(config, key, value)); } catch (e) { return { ok: false, error: readableError(e) }; } });
   handle('config:reset', () => { const result = commit(freshConfig()); widget.webContents.send('view:command', 'reset-view'); return result; });
@@ -305,7 +324,9 @@ else {
     placeWindows(); restoreLayout(); registerIPC();
     if (testMode) (globalThis as any).__jovianTest = {
       restoreControls: () => setControlsVisible(true), switchSystem,
+      setHiddenLayer,
       loginItemIntent: () => loginItemIntent,
+      desktopMode: () => ({ layer: config.view.hiddenLayer, opacity: widget.getOpacity(), inputMode: ignoreMode }),
       traySystems: () => traySystems(), presentation: () => ({ controlsHidden: !config.view.showHUD, taskbarHidden, desktopLayer, desktopLayerError, alwaysOnTop: widget.isAlwaysOnTop(), focusable: widget.isFocusable() }),
     };
     for (const win of [widget, settings]) {

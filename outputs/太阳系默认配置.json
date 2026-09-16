@@ -772,6 +772,8 @@
     "clickThrough": true,
     "showHUD": true,
     "launchAtLogin": false,
+    "hiddenLayer": "top",
+    "hiddenOpacity": 0.72,
     "fps": 60,
     "transitionSeconds": 1.1,
     "bloomEnabled": true,
