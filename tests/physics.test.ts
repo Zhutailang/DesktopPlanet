@@ -11,18 +11,21 @@ test('eight major planets, 21 major moons and the v2 defaults are valid', () => 
   const config = freshConfig(); assert.equal(config.planets.length, 8); assert.equal(config.planets.reduce((n,p) => n + p.satellites.items.length, 0), 21);
   assert.ok(configSchema.safeParse(config).success); assert.equal(config.navigation.systemId, 'solar');assert.equal(config.view.launchAtLogin,false);
   assert.equal(config.view.hiddenLayer,'top');assert.equal(config.view.hiddenOpacity,0.72);
+  assert.equal(config.view.windowWidth,860);assert.equal(config.view.windowHeight,790);
 });
 test('older v2 configs gain display defaults while keeping their existing settings', () => {
   const old=structuredClone(freshConfig()) as any;
-  delete old.view.bloomEnabled;delete old.view.bloomStrength;delete old.view.bloomRadius;delete old.view.launchAtLogin;delete old.view.hiddenLayer;delete old.view.hiddenOpacity;
+  delete old.view.bloomEnabled;delete old.view.bloomStrength;delete old.view.bloomRadius;delete old.view.launchAtLogin;delete old.view.hiddenLayer;delete old.view.hiddenOpacity;delete old.view.windowWidth;delete old.view.windowHeight;
   old.view.zoom=1.7;old.planets[4].planet.spinPeriodHours=17;
   const next=configSchema.parse(old);
   assert.equal(next.view.bloomEnabled,true);assert.equal(next.view.bloomStrength,1);assert.equal(next.view.bloomRadius,0.55);
   assert.equal(next.view.launchAtLogin,false);
   assert.equal(next.view.hiddenLayer,'top');assert.equal(next.view.hiddenOpacity,0.72);
+  assert.equal(next.view.windowWidth,860);assert.equal(next.view.windowHeight,790);
   assert.equal(next.view.zoom,1.7);assert.equal(next.planets[4].planet.spinPeriodHours,17);
   assert.throws(()=>patchedConfig(next,'view.bloomStrength',3.1));assert.throws(()=>patchedConfig(next,'view.bloomRadius',-0.1));
   assert.throws(()=>patchedConfig(next,'view.hiddenOpacity',0.1));assert.throws(()=>patchedConfig(next,'view.hiddenLayer','middle'));
+  assert.throws(()=>patchedConfig(next,'view.windowWidth',319));assert.throws(()=>patchedConfig(next,'view.windowHeight',240.5));
 });
 test('physical periods and reverse spin integrate correctly independent of frame rate', () => {
   close(advanceAngle(0, 9.925 * 3600 / 4, 9.925), Math.PI / 2); close(advanceAngle(0.4, 9.925 * 3600, 9.925), 0.4);

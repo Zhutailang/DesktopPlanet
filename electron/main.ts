@@ -15,9 +15,11 @@ app.setAppUserModelId('local.jovian.desk');
 const configFile = path.join(dataDir, 'config.json');
 let config = freshConfig();
 let loadWarning = '';
+let hadConfiguredWindowSize = false;
 if (existsSync(configFile)) {
   try {
     const text = readFileSync(configFile, 'utf8'), raw = JSON.parse(text);
+    hadConfiguredWindowSize = Number.isSafeInteger(raw?.view?.windowWidth) && Number.isSafeInteger(raw?.view?.windowHeight);
     config = configSchema.parse(raw);
     if (raw.version === 1) {
       writeFileSync(path.join(dataDir, `config-v1-backup-${Date.now()}.json`), text, 'utf8');
@@ -61,6 +63,11 @@ function fitBounds(bounds: Electron.Rectangle, area: Electron.Rectangle) {
 function saveLayout() {
   if (!widget || widget.isDestroyed() || !normalBounds) return;
   if (!filled) normalBounds = widget.getBounds();
+  if (!filled && (config.view.windowWidth !== normalBounds.width || config.view.windowHeight !== normalBounds.height)) {
+    let next = patchedConfig(config, 'view.windowWidth', normalBounds.width);
+    next = patchedConfig(next, 'view.windowHeight', normalBounds.height);
+    commit(next);
+  }
   try {
     writeFileSync(`${layoutFile}.tmp`, JSON.stringify({ bounds: normalBounds, filled, displayId: filledDisplayId }), 'utf8');
     renameSync(`${layoutFile}.tmp`, layoutFile);
@@ -109,7 +116,13 @@ function restoreLayout() {
     const saved = JSON.parse(readFileSync(layoutFile, 'utf8'));
     const b = saved.bounds;
     if (!b || !['x', 'y', 'width', 'height'].every(key => Number.isSafeInteger(b[key])) || b.width < 240 || b.height < 180 || b.width > 20000 || b.height > 20000) return;
-    normalBounds = fitBounds(b, screen.getDisplayMatching(b).workArea);
+    const requested = hadConfiguredWindowSize ? { ...b, width: config.view.windowWidth, height: config.view.windowHeight } : b;
+    normalBounds = fitBounds(requested, screen.getDisplayMatching(b).workArea);
+    if (!hadConfiguredWindowSize) {
+      let next = patchedConfig(config, 'view.windowWidth', normalBounds.width);
+      next = patchedConfig(next, 'view.windowHeight', normalBounds.height);
+      config = next; persist(config); hadConfiguredWindowSize = true;
+    }
     widget.setBounds(normalBounds, false);
     if (saved.filled === true) {
       const display = screen.getAllDisplays().find(d => d.id === saved.displayId) || screen.getDisplayMatching(normalBounds);
@@ -140,14 +153,25 @@ function applyLaunchAtLogin() {
     app.setLoginItemSettings({ openAtLogin: loginItemIntent, path: process.execPath });
   }
 }
-function broadcast() {
+function applyConfiguredWindowSize() {
+  if (!widget || widget.isDestroyed()) return;
+  const reference = normalBounds || widget.getBounds();
+  const area = screen.getDisplayMatching(reference).workArea;
+  normalBounds = fitBounds({ ...reference, width: config.view.windowWidth, height: config.view.windowHeight }, area);
+  if (!filled) widget.setBounds(normalBounds, false);
+  if (settings?.isVisible()) placeSettings();
+  saveLayout();
+}
+function broadcast(sizeChanged = false) {
   for (const win of [widget, settings]) if (win && !win.isDestroyed()) win.webContents.send('config:changed', config);
   applyLaunchAtLogin();
+  if (sizeChanged) applyConfiguredWindowSize();
   applyWindowPresentation();
   updateIgnore(); updateTray();
 }
 function commit(next: Config): Result {
-  try { persist(next); config = next; broadcast(); return { ok: true, config }; }
+  const sizeChanged = next.view.windowWidth !== config.view.windowWidth || next.view.windowHeight !== config.view.windowHeight;
+  try { persist(next); config = next; broadcast(sizeChanged); return { ok: true, config }; }
   catch (error) { return { ok: false, error: `保存失败：${readableError(error)}` }; }
 }
 function updateIgnore() {
@@ -247,7 +271,7 @@ function updateTray() {
 }
 function placeWindows() {
   const area = screen.getPrimaryDisplay().workArea;
-  const width = Math.min(860, area.width - 24), height = Math.min(790, area.height - 24);
+  const width = Math.min(config.view.windowWidth, area.width - 24), height = Math.min(config.view.windowHeight, area.height - 24);
   filled = false; filledDisplayId = undefined;
   normalBounds = { x: Math.round(area.x + (area.width - width) / 2), y: Math.round(area.y + (area.height - height) / 2), width, height };
   widget.setBounds(normalBounds, false);
@@ -311,9 +335,9 @@ else {
     applyLaunchAtLogin();
     const icon = path.join(root, 'dist', 'icon.png');
     const preload = path.join(root, 'electron-dist', 'preload.cjs');
-    widget = new BrowserWindow({ title: 'Jovian Desk · 桌面星系', width: 860, height: 790,
+    widget = new BrowserWindow({ title: 'Jovian Desk · 桌面星系', width: config.view.windowWidth, height: config.view.windowHeight,
       frame: false, transparent: true, backgroundColor: '#00000000', hasShadow: false,
-      resizable: false, maximizable: false, show: false, skipTaskbar: !config.view.showHUD, alwaysOnTop: config.view.showHUD && config.view.alwaysOnTop,
+      minWidth: 320, minHeight: 240, resizable: true, maximizable: false, show: false, skipTaskbar: !config.view.showHUD, alwaysOnTop: config.view.showHUD && config.view.alwaysOnTop,
       icon, webPreferences: { preload, contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false },
     });
     settings = new BrowserWindow({ title: 'Jovian Desk · 观测设置', width: 430, height: 790,

@@ -774,6 +774,8 @@
     "launchAtLogin": false,
     "hiddenLayer": "top",
     "hiddenOpacity": 0.72,
+    "windowWidth": 860,
+    "windowHeight": 790,
     "fps": 60,
     "transitionSeconds": 1.1,
     "bloomEnabled": true,

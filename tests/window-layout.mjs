@@ -56,6 +56,22 @@ try {
     layouts.push(layout);
   }
 
+  assert.equal(await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().find(w => !w.getTitle().includes('观测设置')).isResizable()), true);
+  await planet.getByRole('button', { name: '打开观测设置' }).click();
+  await settings.getByRole('tab', { name: '显示', exact: true }).click();
+  await settings.getByLabel('窗口宽度', { exact: true }).fill('640');
+  await settings.getByLabel('窗口宽度', { exact: true }).press('Tab');
+  await settings.getByLabel('窗口高度', { exact: true }).fill('420');
+  await settings.getByLabel('窗口高度', { exact: true }).press('Tab');
+  await expect.poll(() => application.evaluate(({ BrowserWindow }) => {
+    const bounds = BrowserWindow.getAllWindows().find(w => !w.getTitle().includes('观测设置')).getBounds(); return [bounds.width, bounds.height];
+  })).toEqual([640, 420]);
+  await expect.poll(() => planet.evaluate(() => {
+    const view = window.__jovianDebug.getSnapshot().config.view; return [view.windowWidth, view.windowHeight];
+  })).toEqual([640, 420]);
+  await settings.getByRole('tab', { name: '星球', exact: true }).click();
+  await settings.getByRole('button', { name: '关闭设置' }).click();
+
   // Use the smallest connected display, including a non-primary monitor when available.
   const displays = await application.evaluate(({ screen }) => screen.getAllDisplays().map(d => ({ id: d.id, bounds: d.bounds, workArea: d.workArea, scaleFactor: d.scaleFactor })));
   const target = [...displays].sort((a, b) => a.bounds.width * a.bounds.height - b.bounds.width * b.bounds.height)[0];

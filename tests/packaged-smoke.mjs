@@ -34,12 +34,14 @@ try{
   await app.close();running=null;
 
   const olderV2=JSON.parse(await readFile(path.join(root,'outputs','太阳系默认配置.json'),'utf8'));
-  delete olderV2.view.hiddenLayer;delete olderV2.view.hiddenOpacity;
+  delete olderV2.view.hiddenLayer;delete olderV2.view.hiddenOpacity;delete olderV2.view.windowWidth;delete olderV2.view.windowHeight;
   await writeFile(path.join(userData,'config.json'),JSON.stringify(olderV2,null,2));
   running=await launch();({app,page}=running);scene=await page.evaluate(()=>window.__jovianDebug.getSnapshot());
   assert.equal(scene.config.view.hiddenLayer,'top');assert.equal(scene.config.view.hiddenOpacity,0.72);
+  assert.equal(scene.config.view.windowWidth,normal.width);assert.equal(scene.config.view.windowHeight,normal.height);
   const normalizedV2=JSON.parse(await readFile(path.join(userData,'config.json'),'utf8'));
   assert.equal(normalizedV2.view.hiddenLayer,'top');assert.equal(normalizedV2.view.hiddenOpacity,0.72);
+  assert.equal(normalizedV2.view.windowWidth,normal.width);assert.equal(normalizedV2.view.windowHeight,normal.height);
   await app.close();running=null;
 
   const legacy=JSON.parse(await readFile(path.join(root,'outputs','木星默认配置.json'),'utf8'));legacy.planet.spinPeriodHours=17;legacy.satellites.items[0].name='迁移保留';

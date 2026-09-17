@@ -115,6 +115,9 @@ function render() {
       numeric('光晕强度', 'view.bloomStrength', 0, 3, 0.05, '', '提高数值，光晕更明亮。', true) +
       numeric('光晕扩散范围', 'view.bloomRadius', 0, 1, 0.05, '', '提高数值，光晕更宽、更柔和。', true) +
       `<div class="section-divider"></div>` +
+      numeric('窗口宽度', 'view.windowWidth', 320, 7680, 1, 'px', '非铺满状态的窗口宽度；超过当前屏幕时会自动收进屏幕。') +
+      numeric('窗口高度', 'view.windowHeight', 240, 4320, 1, 'px', '非铺满状态的窗口高度；铺满时修改会在退出铺满后生效。') +
+      `<div class="section-divider"></div>` +
       toggle('开机自启动', 'view.launchAtLogin', '登录 Windows 后自动启动 Jovian Desk') +
       select('隐藏后的显示层级', 'view.hiddenLayer', [['top', '置顶展示 · 鼠标穿透'], ['bottom', '置于桌面底层']]) +
       numeric('隐藏后的透明度', 'view.hiddenOpacity', 0.2, 1, 0.05, '', '隐藏操作 UI 后应用到整个星系窗口。', true) +
